@@ -2,263 +2,500 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>黃金挖礦工 Gold Miner</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>⛏️ 黃金挖礦工 Gold Miner</title>
+<link rel="icon" type="image/svg+xml" href="gold-miner-app-logo.svg">
+<link rel="apple-touch-icon" href="gold-miner-app-logo.svg">
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:#14121f;color:#fff;font-family:"Microsoft JhengHei",sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
-header{width:100%;max-width:620px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
-h1{font-size:20px;margin:0;color:#ffd54a}
-.stats{display:flex;gap:10px;font-size:14px;flex-wrap:wrap}
-.stats span{background:#2a2640;padding:4px 8px;border-radius:8px}
-#wrap{position:relative;width:100%;max-width:620px}
-canvas{width:100%;display:block;background:#6ec6ff;border-radius:12px;image-rendering:pixelated;touch-action:none}
-.btn{background:#7c4dff;color:#fff;border:0;border-radius:12px;padding:10px 16px;font-size:16px;cursor:pointer}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{margin:0;background:radial-gradient(circle at top,#2a2550,#0f0d1c 70%);color:#fff;font-family:"Microsoft JhengHei",sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;touch-action:manipulation}
+header{width:100%;max-width:640px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+h1{font-size:19px;margin:0;color:#ffd54a;display:flex;align-items:center;gap:6px}
+h1 img{width:30px;height:30px;border-radius:8px}
+.stats{display:flex;gap:6px;font-size:13px;flex-wrap:wrap}
+.stats span{background:#2a2640;padding:4px 8px;border-radius:8px;white-space:nowrap}
+#wrap{position:relative;width:100%;max-width:640px;padding:0 6px}
+canvas{width:100%;display:block;background:#6ec6ff;border-radius:14px;border:3px solid #3b3566;touch-action:none}
+#msg{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.72);padding:6px 14px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.btn{background:#7c4dff;color:#fff;border:0;border-radius:12px;padding:9px 13px;font-size:15px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
-.btn.gold{background:#ffb300;color:#222}
-#bar{display:flex;gap:8px;margin:8px;flex-wrap:wrap;justify-content:center}
-#pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:6px;margin:6px 0 16px}
+.btn.gold{background:#ffb300;color:#222;font-weight:bold}
+.btn.red{background:#e53935}
+.btn.green{background:#2e9e5b}
+.btn:disabled{opacity:.4}
+#bar{display:flex;gap:6px;margin:8px;flex-wrap:wrap;justify-content:center}
+#pad{display:grid;grid-template-columns:repeat(3,66px);grid-template-rows:repeat(2,56px);gap:6px;margin:4px 0 18px}
 #pad button{background:#3a3560;color:#fff;border:0;border-radius:12px;font-size:24px}
 #pad button:active{background:#7c4dff}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:5}
-.box{background:#231f38;border-radius:16px;padding:18px;width:90%;max-width:420px}
-.box h2{margin:0 0 10px;color:#ffd54a}
-.item{display:flex;justify-content:space-between;align-items:center;background:#2f2a4d;padding:10px;border-radius:10px;margin:8px 0;font-size:14px}
-#msg{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:6px 14px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:10}
+.box{background:#231f38;border-radius:18px;padding:16px;width:94%;max-width:480px;max-height:90vh;overflow:auto;border:2px solid #3f3870}
+.box h2{margin:0 0 8px;color:#ffd54a;font-size:19px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{flex:1;min-width:58px;padding:7px 4px;border:0;border-radius:10px;background:#3a3560;color:#fff;font-size:13px;font-family:inherit}
+.tabs button.on{background:#ffb300;color:#222;font-weight:bold}
+.item{display:flex;justify-content:space-between;align-items:center;background:#2f2a4d;padding:9px 10px;border-radius:10px;margin:7px 0;font-size:14px;gap:8px}
+.item small{color:#b9b3d9}
+.item.done{opacity:.55}
+.bar{height:8px;background:#1b1830;border-radius:6px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:#ffd54a}
+#home{position:fixed;inset:0;z-index:20;background:radial-gradient(circle at 50% 30%,#3a2f78,#0d0b18 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px}
+#home img{width:140px;height:140px;border-radius:30px;box-shadow:0 10px 40px rgba(255,200,0,.35)}
+#home h2{font-size:32px;margin:0;color:#ffd54a}
+#home p{margin:0;color:#cfc9f0;max-width:340px;font-size:14px;line-height:1.6}
+#home .btn{width:230px;font-size:18px;padding:13px}
+input[type=text]{background:#171428;border:1px solid #4a4380;color:#fff;padding:8px;border-radius:8px;width:100%;font-size:15px;font-family:inherit}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px;text-align:center;border-bottom:1px solid #3a3560}
 </style>
 </head>
 <body>
+
+<div id="home">
+  <img src="gold-miner-app-logo.svg" alt="" onerror="this.style.display='none'">
+  <h2>⛏️ 黃金挖礦工</h2>
+  <p>往地底挖得越深,寶藏越值錢!賺金幣升級鎬子、買梯子和安全帽,小心落石與爆炸桶!</p>
+  <button class="btn gold" id="startBtn">▶ 開始遊戲</button>
+  <button class="btn" id="homeShop">🛒 商店 / 技能 / 任務</button>
+  <p id="homeInfo"></p>
+</div>
+
 <header>
-  <h1>⛏️ 黃金挖礦工</h1>
+  <h1><img src="gold-miner-app-logo.svg" alt="" onerror="this.style.display='none'">黃金挖礦工</h1>
   <div class="stats">
+    <span id="hp">❤️❤️❤️</span>
     <span>💰 <b id="gold">0</b></span>
+    <span>💎 <b id="gems">0</b></span>
     <span>🎒 <b id="cargo">0</b>/<b id="cap">20</b></span>
     <span>📏 <b id="depth">0</b>m</span>
-    <span>💣 <b id="tnt">0</b></span>
   </div>
 </header>
+
 <div id="wrap">
   <canvas id="c" width="600" height="480"></canvas>
   <div id="msg"></div>
 </div>
+
 <div id="bar">
-  <button class="btn gold" id="shopBtn">🛒 商店</button>
-  <button class="btn" id="tntBtn">💣 炸藥 (E)</button>
-  <button class="btn" id="upBtn">⬆️ 回地面 (R)</button>
-  <button class="btn" id="resetBtn">🗑️ 重置</button>
+  <button class="btn gold" id="shopBtn">🛒 選單</button>
+  <button class="btn" id="tntBtn">💣 TNT <b id="tnt">0</b></button>
+  <button class="btn" id="ladBtn">🪜 梯子 <b id="lad">0</b></button>
+  <button class="btn green" id="cpBtn">⛺ 存檔點</button>
+  <button class="btn red" id="upBtn">⬆️ 回地面</button>
 </div>
+
 <div id="pad">
   <span></span><button data-d="up">▲</button><span></span>
   <button data-d="left">◀</button><button data-d="down">▼</button><button data-d="right">▶</button>
 </div>
 
-<div class="modal" id="shop">
+<div class="modal" id="panel">
   <div class="box">
-    <h2>🛒 老喬的礦工商店</h2>
-    <div id="items"></div>
-    <button class="btn" id="closeShop" style="width:100%">關閉</button>
+    <div class="tabs" id="tabs"></div>
+    <div id="content"></div>
+    <button class="btn" style="width:100%;margin-top:10px" onclick="closePanel()">關閉</button>
+  </div>
+</div>
+
+<div class="modal" id="death">
+  <div class="box" style="text-align:center">
+    <h2 id="deathTitle">💀 你倒下了</h2>
+    <p id="deathText" style="color:#cfc9f0;font-size:14px"></p>
+    <button class="btn gold" style="width:100%;margin:6px 0" id="reviveBtn">💎 3 寶石原地復活</button>
+    <button class="btn" style="width:100%" id="respBtn">⛺ 回到存檔點重來</button>
   </div>
 </div>
 
 <script>
-const COLS=15, ROWS=220, T=40, VW=15, VH=12, SURF=3;
-const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const COLS=15,ROWS=320,T=40,VW=15,VH=12,SURF=3,CPGAP=50;
 const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d');
 
-// 方塊種類
-const TY={EMPTY:0,DIRT:1,STONE:2,HARD:3,COAL:4,GOLD:5,GEM:6,BOULDER:7,DIAM:8};
+const TY={EMPTY:0,DIRT:1,STONE:2,HARD:3,COAL:4,GOLD:5,GEM:6,BOULDER:7,DIAM:8,LADDER:9,BARREL:10,CHEST:11,BEDROCK:12};
 const INFO={
  1:{hard:1,val:0,col:'#8b5a2b'},
  2:{hard:2.5,val:0,col:'#7d7d85'},
  3:{hard:5,val:0,col:'#4a4a55'},
  4:{hard:2,val:3,col:'#2b2b2b'},
  5:{hard:3,val:12,col:'#ffc107'},
- 6:{hard:5,val:40,col:'#26e0a0'},
+ 6:{hard:5,val:0,col:'#26e0a0'},
  7:{hard:3,val:0,col:'#a0a0a8'},
- 8:{hard:8,val:150,col:'#4fc3f7'}
+ 8:{hard:8,val:0,col:'#4fc3f7'},
+ 10:{hard:1.5,val:0,col:'#c0392b'},
+ 11:{hard:2,val:0,col:'#b8860b'},
+ 12:{hard:1e9,val:0,col:'#111'}
 };
+const PICK_NAME=['木鏟','鐵鏟','鋼鎬','強化鎬','鑽石鎬','雷射鎬','神話鎬'];
+const PICK_POW=[1,1.6,2.4,3.4,4.8,6.5,9];
+const PICK_COST=[0,60,150,320,650,1300,2600];
 
-let save=JSON.parse(localStorage.getItem('goldMinerSave')||'null')||{gold:0,pick:1,cap:20,tnt:0,best:0};
-let grid,px,py,cargo,dig,keys={},fallT=0,stepT=0,msgT=0,dead=0;
+const DEF={gold:0,gems:0,pick:1,cap:20,tnt:0,lad:3,hat:0,best:0,cp:0,mined:0,earned:0,stars:0,
+  name:'礦工',snd:true,sk:{speed:0,luck:0,bag:0},claim:{},ach:{},stat:{tnt:0,ladder:0,chest:0,hat:0},lb:[]};
+let save=load();
+function load(){
+  let s={};try{s=JSON.parse(localStorage.getItem('goldMinerV2')||'{}')}catch(e){}
+  const r=Object.assign({},JSON.parse(JSON.stringify(DEF)),s);
+  r.sk=Object.assign({},DEF.sk,s.sk||{});r.stat=Object.assign({},DEF.stat,s.stat||{});
+  return r;
+}
+function persist(){localStorage.setItem('goldMinerV2',JSON.stringify(save));}
 
-function rnd(a,b){return a+Math.random()*(b-a)}
+let grid,px,py,cargo=0,sellValue=0,dig=null,keys={},stepT=0,fallT=0,gravT=0,fallDist=0,msgT=0;
+let hp=3,dead=false,homeOpen=true,panelOpen=false,runMax=0,shake=0,face=1;
+let parts=[],camY=0,lastAchT=0;
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const capNow=()=>save.cap+5*save.sk.bag;
+const digPow=()=>PICK_POW[save.pick-1]*(1+0.12*save.sk.speed);
+const paused=()=>homeOpen||panelOpen||dead;
+
+// ---------- 音效 ----------
+let AC=null;
+function sfx(type){
+  if(!save.snd)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    const t=AC.currentTime;
+    const P={dig:[180,90,.05,'square',.04],coin:[780,1250,.12,'triangle',.08],boom:[120,30,.35,'sawtooth',.18],
+      hurt:[300,80,.25,'square',.12],buy:[500,900,.15,'triangle',.08],ach:[600,1400,.4,'triangle',.1]}[type];
+    o.type=P[3];o.frequency.setValueAtTime(P[0],t);o.frequency.exponentialRampToValueAtTime(P[1],t+P[2]);
+    g.gain.setValueAtTime(P[4],t);g.gain.exponentialRampToValueAtTime(.0001,t+P[2]);
+    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+P[2]);
+  }catch(e){}
+}
+function say(s){const m=$('msg');m.textContent=s;m.style.opacity=1;msgT=1.8;}
+function burst(x,y,col,n=8){for(let i=0;i<n;i++)parts.push({x:x*T+20,y:y*T+20,vx:rnd(-90,90),vy:rnd(-120,20),life:rnd(.3,.7),col});}
+
+// ---------- 世界 ----------
 function genWorld(){
   grid=[];
   for(let r=0;r<ROWS;r++){
     const row=[];
     for(let c=0;c<COLS;c++){
       if(r<SURF){row.push(0);continue;}
-      const d=r-SURF, x=Math.random();
+      if(r===ROWS-1){row.push(TY.BEDROCK);continue;}
+      const d=r-SURF,x=Math.random();
       let t=TY.DIRT;
-      if(d>8&&x<0.25) t=TY.STONE;
-      if(d>30&&x<0.35) t=TY.HARD;
-      if(x>0.90) t=TY.COAL;
-      if(d>6&&x>0.955) t=TY.GOLD;
-      if(d>25&&x>0.985) t=TY.GEM;
-      if(d>60&&x>0.995) t=TY.DIAM;
-      if(d>4&&x>0.80&&x<0.84) t=TY.BOULDER;
+      if(d>8&&x<0.25)t=TY.STONE;
+      if(d>35&&x<0.33)t=TY.HARD;
+      if(x>0.90)t=TY.COAL;
+      if(d>6&&x>0.955)t=TY.GOLD;
+      if(d>18&&x>0.978)t=TY.GEM;
+      if(d>70&&x>0.994)t=TY.DIAM;
+      if(d>4&&x>0.80&&x<0.835)t=TY.BOULDER;
+      if(d>12&&x>0.76&&x<0.78)t=TY.BARREL;
+      if(d>5&&x>0.74&&x<0.755)t=TY.CHEST;
       row.push(t);
     }
     grid.push(row);
   }
+  for(let k=1;SURF+CPGAP*k<ROWS-2;k++){
+    const r=SURF+CPGAP*k;
+    for(let c=4;c<=10;c++){grid[r][c]=0;grid[r+1][c]=TY.STONE;grid[r-1][c]=(grid[r-1][c]===TY.BOULDER?TY.DIRT:grid[r-1][c]);}
+  }
 }
-function reset(){px=7;py=SURF-1;cargo=0;dig=null;}
-function say(s){const m=$('msg');m.textContent=s;m.style.opacity=1;msgT=1.6;}
-function persist(){localStorage.setItem('goldMinerSave',JSON.stringify(save));}
+const isCP=(r,c)=>r>SURF&&(r-SURF)%CPGAP===0&&c>=4&&c<=10;
+const passable=t=>t===0||t===9;
+const depthOf=r=>Math.max(0,r-SURF+1);
+
+// ---------- 狀態 ----------
+function respawn(r){px=7;py=r;cargo=0;sellValue=0;dig=null;fallDist=0;hp=3;dead=false;$('death').style.display='none';ui();}
 function ui(){
-  $('gold').textContent=save.gold;$('cargo').textContent=cargo;$('cap').textContent=save.cap;
-  $('depth').textContent=Math.max(0,(py-SURF+1));$('tnt').textContent=save.tnt;
+  $('gold').textContent=save.gold;$('gems').textContent=save.gems;
+  $('cargo').textContent=cargo;$('cap').textContent=capNow();
+  $('depth').textContent=depthOf(py);$('tnt').textContent=save.tnt;$('lad').textContent=save.lad;
+  $('hp').textContent='❤️'.repeat(Math.max(0,hp))+'🖤'.repeat(Math.max(0,3-hp))+(save.hat>0?'⛑️'+save.hat:'');
+  $('homeInfo').textContent='最深紀錄 '+save.best+'m ｜ ⭐ 技能點 '+save.stars;
 }
 function sell(){
-  if(cargo>0){save.gold+=cargo*0+sellValue;say('賣出礦物 +'+sellValue+' 金幣');sellValue=0;cargo=0;persist();ui();}
+  if(cargo<=0)return;
+  const v=Math.round(sellValue*(1+0.1*save.sk.luck));
+  save.gold+=v;save.earned+=v;cargo=0;sellValue=0;sfx('coin');say('賣出礦物 +'+v+' 💰');persist();ui();
 }
-let sellValue=0;
-
-function addLoot(t){
-  const v=INFO[t].val;
-  if(v>0){
-    if(cargo>=save.cap){say('背包滿了!回地面賣掉');return;}
-    cargo++;sellValue+=v;
+function onArrive(){
+  const d=depthOf(py);
+  if(d>runMax)runMax=d;
+  if(d>save.best){
+    const gain=Math.floor(d/20)-Math.floor(save.best/20);
+    save.best=d;if(gain>0){save.stars+=gain;say('⭐ 獲得 '+gain+' 技能點!');}
+    persist();
   }
+  if(isCP(py,px)){
+    if(py>save.cp){save.cp=py;say('⛺ 存檔點已記錄!');persist();}
+    hp=3;
+  }
+  if(py<SURF){hp=3;sell();}
+  ui();
 }
-function removeTile(x,y){
+function addOre(t){
+  const v=INFO[t].val;if(v<=0)return;
+  if(cargo>=capNow()){say('🎒 背包滿了!回地面賣掉');return;}
+  cargo++;sellValue+=v*(1+depthOf(py)/120);
+}
+function collect(t,x,y){
+  if(t===TY.GEM){save.gems+=1;sfx('coin');say('💎 +1 寶石');}
+  else if(t===TY.DIAM){save.gems+=3;sfx('coin');say('💠 鑽石!+3 寶石');}
+  else if(t===TY.CHEST){
+    save.stat.chest++;sfx('ach');
+    const r=Math.random(),d=depthOf(y);
+    if(r<.45){const g=Math.round(rnd(25,70)*(1+d/50));save.gold+=g;save.earned+=g;say('📦 寶箱:+'+g+' 金幣');}
+    else if(r<.7){const n=1+Math.floor(Math.random()*2);save.gems+=n;say('📦 寶箱:+'+n+' 寶石');}
+    else if(r<.85){save.tnt+=2;say('📦 寶箱:+2 TNT');}
+    else{const n=3+Math.floor(Math.random()*4);save.lad+=n;say('📦 寶箱:+'+n+' 梯子');}
+  }
+  else addOre(t);
+}
+function removeTile(x,y,loot=true){
   const t=grid[y][x];
-  if(t===0)return;
-  grid[y][x]=0;addLoot(t);
+  if(t===0||t===TY.BEDROCK)return;
+  grid[y][x]=0;
+  if(t!==TY.LADDER)save.mined++;
+  if(loot)collect(t,x,y);
+  burst(x,y,INFO[t]?INFO[t].col:'#999',6);
 }
-function tryMove(dx,dy){
-  const nx=px+dx, ny=py+dy;
-  if(nx<0||nx>=COLS||ny<0||ny>=ROWS)return;
-  const t=grid[ny][nx];
-  if(t===0){px=nx;py=ny;dig=null;
-    if(py<SURF){ if(cargo>0)sell(); }
-    if(py-SURF+1>save.best){save.best=py-SURF+1;persist();}
-    ui();
-  } else {
-    const need=INFO[t].hard/save.pick;
-    if(!dig||dig.x!==nx||dig.y!==ny)dig={x:nx,y:ny,p:0,need};
+function hurt(n,why){
+  if(dead)return;
+  hp-=n;sfx('hurt');shake=.3;say('💢 '+why);ui();
+  if(hp<=0)die(why);
+}
+function die(why){
+  dead=true;recordRun();
+  $('deathTitle').textContent='💀 你倒下了';
+  $('deathText').textContent=why+'。背包裡的礦物遺失了。目前深度 '+depthOf(py)+'m,存檔點 '+depthOf(save.cp||SURF)+'m。';
+  $('reviveBtn').disabled=save.gems<3;
+  $('death').style.display='flex';
+  cargo=0;sellValue=0;ui();
+}
+function recordRun(){
+  if(runMax>=5){
+    save.lb.push({name:save.name,depth:runMax,gold:save.earned,t:new Date().toLocaleDateString()});
+    save.lb.sort((a,b)=>b.depth-a.depth);save.lb=save.lb.slice(0,10);persist();
   }
+  runMax=depthOf(py);
 }
-function die(){
-  say('💥 被落石壓到了!失去背包礦物');
-  cargo=0;sellValue=0;reset();ui();
-}
-function explode(){
-  if(save.tnt<=0){say('沒有炸藥,請到商店購買');return;}
-  save.tnt--;persist();
-  for(let y=py-1;y<=py+1;y++)for(let x=px-1;x<=px+1;x++){
-    if(x<0||x>=COLS||y<SURF||y>=ROWS)continue;
+function explodeAt(cx,cy,r,hurtPlayer,ring){
+  sfx('boom');shake=.5;
+  for(let y=cy-2;y<=cy+2;y++)for(let x=cx-2;x<=cx+2;x++){
+    if(x<0||x>=COLS||y<SURF||y>=ROWS-1)continue;
     if(x===px&&y===py)continue;
-    removeTile(x,y);
+    const dist=Math.max(Math.abs(x-cx),Math.abs(y-cy));
+    if(dist<=r||(ring&&dist===2&&Math.random()<.5))removeTile(x,y);
   }
-  for(let y=py-2;y<=py+2;y++)for(let x=px-2;x<=px+2;x++){
-    if(x<0||x>=COLS||y<SURF||y>=ROWS)continue;
-    if(Math.abs(x-px)+Math.abs(y-py)<=3&&!(x===px&&y===py)&&Math.random()<0.5)removeTile(x,y);
-  }
-  say('💥 轟!');ui();
+  burst(cx,cy,'#ff9800',22);
+  if(hurtPlayer&&Math.abs(px-cx)<=r&&Math.abs(py-cy)<=r)hurt(1,'被爆炸波及');
 }
-function fall(){
-  for(let y=ROWS-2;y>=SURF;y--){
-    for(let x=0;x<COLS;x++){
-      if(grid[y][x]===TY.BOULDER){
-        if(x===px&&y+1===py){grid[y][x]=0;die();return;}
-        if(grid[y+1][x]===0){grid[y][x]=0;grid[y+1][x]=TY.BOULDER;}
-      }
+function useTNT(){
+  if(paused())return;
+  if(save.tnt<=0){say('沒有 TNT,請到商店購買');return;}
+  save.tnt--;save.stat.tnt++;persist();explodeAt(px,py,1,false,true);ui();
+}
+function useLadder(){
+  if(paused())return;
+  if(save.lad<=0){say('沒有梯子,請到商店購買');return;}
+  if(grid[py][px]===0&&py>=SURF){grid[py][px]=TY.LADDER;save.lad--;save.stat.ladder++;persist();ui();sfx('buy');}
+}
+
+// ---------- 移動與挖掘 ----------
+function airborne(){return py+1<ROWS&&grid[py+1][px]===0&&grid[py][px]!==TY.LADDER&&py>=SURF-1&&!(py<SURF-1);}
+function stepOrDig(dx,dy,dt){
+  const nx=px+dx,ny=py+dy;
+  if(nx<0||nx>=COLS||ny<SURF-1||ny>=ROWS)return;
+  const t=grid[ny][nx];
+  if(dx)face=dx;
+  if(passable(t)){
+    if(dy<0&&!(grid[py][px]===TY.LADDER||t===TY.LADDER))return;
+    px=nx;py=ny;dig=null;stepT=.11;onArrive();return;
+  }
+  if(!dig||dig.x!==nx||dig.y!==ny)dig={x:nx,y:ny,p:0,need:INFO[t].hard/digPow()};
+  dig.p+=dt;gravT+=0;
+  if(Math.random()<.2)sfx('dig');
+  if(dig.p>=dig.need){
+    const bt=t;removeTile(nx,ny);dig=null;
+    if(bt===TY.BARREL)explodeAt(nx,ny,1,true,false);
+    ui();
+  }
+}
+function fallBoulders(){
+  for(let y=ROWS-3;y>=SURF;y--)for(let x=0;x<COLS;x++){
+    if(grid[y][x]!==TY.BOULDER)continue;
+    if(x===px&&y+1===py){
+      grid[y][x]=0;
+      if(save.hat>0){save.hat--;save.stat.hat++;sfx('hurt');say('⛑️ 安全帽擋下了落石!');burst(px,py,'#aaa',12);persist();ui();}
+      else{burst(px,py,'#aaa',12);hp=0;die('被落石壓到');}
+      return;
     }
+    if(grid[y+1][x]===0){grid[y][x]=0;grid[y+1][x]=TY.BOULDER;}
   }
 }
 function update(dt){
-  stepT-=dt;fallT-=dt;
+  if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').style.opacity=0;}
+  for(const p of parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=380*dt;}
+  parts=parts.filter(p=>p.life>0);
+  if(shake>0)shake-=dt;
+  if(paused())return;
+  stepT-=dt;fallT-=dt;gravT-=dt;
+  // 重力
+  if(gravT<=0){
+    gravT=.08;
+    if(airborne()){py++;fallDist++;dig=null;onArrive();}
+    else if(fallDist>0){if(fallDist>=7)hurt(1,'摔傷了');fallDist=0;}
+  }
+  // 輸入
+  const air=airborne();
   let dx=0,dy=0;
   if(keys.left)dx=-1;else if(keys.right)dx=1;else if(keys.up)dy=-1;else if(keys.down)dy=1;
-  if((dx||dy)&&stepT<=0){
+  if(!air&&(dx||dy)){
     const nx=px+dx,ny=py+dy;
     const t=(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS)?grid[ny][nx]:-1;
-    if(t===0){tryMove(dx,dy);stepT=0.11;}
-    else if(t>0){
-      tryMove(dx,dy);
-      if(dig){dig.p+=dt;
-        if(dig.p>=dig.need){removeTile(dig.x,dig.y);dig=null;ui();}
-      }
-    }
-  } else if(!(dx||dy)){dig=null;}
-  if(dig&&(dx||dy)&&stepT>0){}
-  if(fallT<=0){fall();fallT=0.18;}
-  if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').style.opacity=0;}
+    if(t>0&&!passable(t))stepOrDig(dx,dy,dt*(1));
+    else if(stepT<=0)stepOrDig(dx,dy,dt);
+  }else if(!dx&&!dy)dig=null;
+  if(fallT<=0){fallBoulders();fallT=.18;}
+  lastAchT-=dt;if(lastAchT<=0){lastAchT=1;checkAch();}
 }
+
+// ---------- 繪圖 ----------
 function drawTile(t,sx,sy){
-  const i=INFO[t];
-  ctx.fillStyle=(t===5||t===6||t===8||t===4)?INFO[1].col:i.col;
-  ctx.fillRect(sx,sy,T,T);
-  ctx.fillStyle='rgba(0,0,0,.12)';
-  ctx.fillRect(sx,sy+T-4,T,4);
-  if(t===4||t===5||t===6||t===8){
-    ctx.fillStyle=i.col;
-    for(const [a,b,s] of [[8,8,10],[22,14,9],[12,24,10]]){
-      ctx.beginPath();
-      if(t===6||t===8){ctx.moveTo(sx+a+s/2,sy+b);ctx.lineTo(sx+a+s,sy+b+s/2);ctx.lineTo(sx+a+s/2,sy+b+s);ctx.lineTo(sx+a,sy+b+s/2);ctx.fill();}
-      else ctx.fillRect(sx+a,sy+b,s,s-2);
-    }
-  }
-  if(t===7){
-    ctx.fillStyle='#8a8a92';ctx.beginPath();ctx.arc(sx+T/2,sy+T/2,T/2-3,0,7);ctx.fill();
-    ctx.fillStyle='#6a6a72';ctx.beginPath();ctx.arc(sx+T/2+4,sy+T/2+3,6,0,7);ctx.fill();
-  }
-  if(t===2||t===3){
-    ctx.strokeStyle='rgba(0,0,0,.3)';ctx.beginPath();
-    ctx.moveTo(sx+6,sy+10);ctx.lineTo(sx+18,sy+20);ctx.moveTo(sx+24,sy+8);ctx.lineTo(sx+32,sy+30);ctx.stroke();
-  }
+  const base=[4,5,6,8,10,11].includes(t)?'#8b5a2b':INFO[t].col;
+  ctx.fillStyle=base;ctx.fillRect(sx,sy,T,T);
+  ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(sx,sy+T-4,T,4);
+  if(t===4||t===5){ctx.fillStyle=INFO[t].col;for(const[a,b,s]of[[8,8,10],[22,14,9],[12,24,10]])ctx.fillRect(sx+a,sy+b,s,s-2);}
+  if(t===6||t===8){ctx.fillStyle=INFO[t].col;for(const[a,b,s]of[[8,8,12],[21,16,11],[11,24,11]]){ctx.beginPath();ctx.moveTo(sx+a+s/2,sy+b);ctx.lineTo(sx+a+s,sy+b+s/2);ctx.lineTo(sx+a+s/2,sy+b+s);ctx.lineTo(sx+a,sy+b+s/2);ctx.fill();}}
+  if(t===7){ctx.fillStyle='#8a8a92';ctx.beginPath();ctx.arc(sx+20,sy+20,17,0,7);ctx.fill();ctx.fillStyle='#6a6a72';ctx.beginPath();ctx.arc(sx+24,sy+23,6,0,7);ctx.fill();}
+  if(t===2||t===3){ctx.strokeStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.moveTo(sx+6,sy+10);ctx.lineTo(sx+18,sy+20);ctx.moveTo(sx+24,sy+8);ctx.lineTo(sx+32,sy+30);ctx.stroke();}
+  if(t===10){ctx.fillStyle='#c0392b';ctx.fillRect(sx+7,sy+6,26,28);ctx.fillStyle='#ffeb3b';ctx.fillRect(sx+7,sy+14,26,5);ctx.fillRect(sx+7,sy+25,26,4);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('!',sx+18,sy+13);}
+  if(t===11){ctx.fillStyle='#b8860b';ctx.fillRect(sx+5,sy+10,30,22);ctx.fillStyle='#ffd54a';ctx.fillRect(sx+5,sy+10,30,6);ctx.fillRect(sx+17,sy+17,6,8);}
+}
+function drawLadder(sx,sy){
+  ctx.fillStyle='#2a1c12';ctx.fillRect(sx,sy,T,T);
+  ctx.fillStyle='#c68642';ctx.fillRect(sx+9,sy,4,T);ctx.fillRect(sx+27,sy,4,T);
+  for(let i=4;i<T;i+=10)ctx.fillRect(sx+9,sy+i,22,3);
 }
 function draw(){
-  const camY=Math.max(0,Math.min(ROWS-VH,py-Math.floor(VH/2)));
-  ctx.clearRect(0,0,cv.width,cv.height);
+  camY=Math.max(0,Math.min(ROWS-VH,py-Math.floor(VH/2)));
+  ctx.save();
+  if(shake>0)ctx.translate(rnd(-4,4),rnd(-4,4));
   ctx.fillStyle='#6ec6ff';ctx.fillRect(0,0,cv.width,cv.height);
   for(let r=0;r<VH;r++){
     const gy=camY+r;
     for(let c=0;c<COLS;c++){
-      const t=grid[gy][c], sx=c*T, sy=r*T;
+      const t=grid[gy][c],sx=c*T,sy=r*T;
       if(gy<SURF){
         if(gy===SURF-1){ctx.fillStyle='#4caf50';ctx.fillRect(sx,sy+T-8,T,8);}
         continue;
       }
-      if(t===0){ctx.fillStyle='#2a1c12';ctx.fillRect(sx,sy,T,T);}
+      if(t===0){ctx.fillStyle='#2a1c12';ctx.fillRect(sx,sy,T,T);
+        if(isCP(gy,c)){ctx.fillStyle='#3a2a1c';ctx.fillRect(sx,sy,T,T);}}
+      else if(t===9)drawLadder(sx,sy);
       else drawTile(t,sx,sy);
     }
   }
-  // 商店小屋
+  // 地面裝飾
   const sr=SURF-1-camY;
-  if(sr>=0){ctx.fillStyle='#c0392b';ctx.fillRect(1*T,sr*T-T+8,T*2,T*2-16);
-    ctx.fillStyle='#fff';ctx.font='14px sans-serif';ctx.fillText('SELL',1*T+16,sr*T+8);}
+  if(sr>=-1){
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(120,40-camY*T,22,0,7);ctx.arc(150,45-camY*T,28,0,7);ctx.arc(185,40-camY*T,20,0,7);ctx.fill();
+    ctx.fillStyle='#c0392b';ctx.fillRect(T,sr*T-T+8,T*2,T*2-16);
+    ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText('SELL',T+16,sr*T+10);
+  }
+  // 存檔點旗子
+  for(let k=1;SURF+CPGAP*k<ROWS-2;k++){
+    const rr=SURF+CPGAP*k-camY;
+    if(rr>=0&&rr<VH){ctx.fillStyle='#fff';ctx.fillRect(7*T+18,rr*T+4,3,32);ctx.fillStyle=(SURF+CPGAP*k<=save.cp)?'#4caf50':'#ff7043';ctx.fillRect(7*T+21,rr*T+5,16,11);}
+  }
   // 玩家
-  const ry=py-camY;
-  const X=px*T, Y=ry*T;
+  const X=px*T,Y=(py-camY)*T;
+  ctx.fillStyle='#1565c0';ctx.fillRect(X+10,Y+22,20,14);
   ctx.fillStyle='#ffcc80';ctx.fillRect(X+10,Y+8,20,14);
   ctx.fillStyle='#f9a825';ctx.fillRect(X+8,Y+3,24,8);
-  ctx.fillStyle='#1565c0';ctx.fillRect(X+10,Y+22,20,14);
-  ctx.fillStyle='#000';ctx.fillRect(X+15,Y+13,3,3);ctx.fillRect(X+23,Y+13,3,3);
-  // 挖掘進度
-  if(dig){
-    const dyy=(dig.y-camY)*T, dxx=dig.x*T;
-    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(dxx+4,dyy+T-10,T-8,6);
-    ctx.fillStyle='#ffeb3b';ctx.fillRect(dxx+4,dyy+T-10,(T-8)*Math.min(1,dig.p/dig.need),6);
-  }
-  // 暗角(越深越暗)
-  const dep=Math.min(1,Math.max(0,(py-SURF)/150))*0.55;
-  ctx.fillStyle='rgba(0,0,0,'+dep+')';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#000';ctx.fillRect(X+(face>0?23:14),Y+13,3,3);
+  ctx.fillStyle='#8b5a2b';ctx.fillRect(X+(face>0?30:4),Y+20,6,3);
+  if(save.hat>0){ctx.fillStyle='#ffeb3b';ctx.fillRect(X+8,Y,24,5);}
+  // 挖掘條
+  if(dig){const dxx=dig.x*T,dyy=(dig.y-camY)*T;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(dxx+4,dyy+T-10,T-8,6);ctx.fillStyle='#ffeb3b';ctx.fillRect(dxx+4,dyy+T-10,(T-8)*Math.min(1,dig.p/dig.need),6);}
+  for(const p of parts){ctx.globalAlpha=Math.max(0,p.life*2);ctx.fillStyle=p.col;ctx.fillRect(p.x,p.y-camY*T,5,5);}
+  ctx.globalAlpha=1;
+  const dep=Math.min(1,depthOf(py)/200)*0.6;
+  ctx.fillStyle='rgba(0,0,10,'+dep+')';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.restore();
+  // 深度條
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(cv.width-10,10,6,cv.height-20);
+  ctx.fillStyle='#ffd54a';ctx.fillRect(cv.width-10,10+(cv.height-20)*(py/ROWS),6,10);
 }
 let last=performance.now();
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;update(dt);draw();requestAnimationFrame(loop);}
 
-// 商店
-function openShop(){
-  const pc=Math.floor(40*Math.pow(1.8,save.pick-1));
-  const cc=Math.floor(30*Math.pow(1.6,(save.cap-20)/10));
-  $('items').innerHTML=
-   `<div class="item"><span>⛏️ 鎬子 Lv.${save.pick}<br><small>挖更快</small></span><button class="btn gold" onclick="buy('pick',${pc})">${pc}💰</button></div>
-    <div class="item"><span>🎒 背包 ${save.cap} 格<br><small>+10 格</small></span><button class="btn gold" onclick="buy('cap',${cc})">${cc}💰</button></div>
-    <div class="item"><span>💣 炸藥 (持有 ${save.tnt})<br><small>炸開周圍方塊</small></span><button class="btn gold" onclick="buy('tnt',25)">25💰</button></div>
-    <div style="font-size:13px;color:#bbb">💰 ${save.gold} ｜ 最深紀錄 ${save.best}m</div>`;
-  $('shop').style.display='flex';
+// ---------- 成就與任務 ----------
+const ACH=[
+ {id:'a1',n:'初出茅廬',d:'挖 50 個方塊',c:()=>save.mined>=50},
+ {id:'a2',n:'地下探險家',d:'到達 25m',c:()=>save.best>=25},
+ {id:'a3',n:'深度挑戰者',d:'到達 100m',c:()=>save.best>=100},
+ {id:'a4',n:'小富翁',d:'累積賺 1000 金',c:()=>save.earned>=1000},
+ {id:'a5',n:'爆破專家',d:'使用 TNT',c:()=>save.stat.tnt>=1},
+ {id:'a6',n:'爬梯高手',d:'放置梯子',c:()=>save.stat.ladder>=1},
+ {id:'a7',n:'尋寶獵人',d:'開啟 3 個寶箱',c:()=>save.stat.chest>=3},
+ {id:'a8',n:'大地主',d:'累積賺 20000 金',c:()=>save.earned>=20000},
+ {id:'a9',n:'鐵頭功',d:'用安全帽擋下落石',c:()=>save.stat.hat>=1},
+ {id:'a10',n:'地心旅人',d:'到達 250m',c:()=>save.best>=250}
+];
+const QUEST=[
+ {id:'q1',n:'挖 100 個方塊',g:()=>save.mined,goal:100,gems:2},
+ {id:'q2',n:'累積賺 500 金幣',g:()=>save.earned,goal:500,gems:3},
+ {id:'q3',n:'到達 60m',g:()=>save.best,goal:60,gems:3},
+ {id:'q4',n:'挖 500 個方塊',g:()=>save.mined,goal:500,gems:5},
+ {id:'q5',n:'累積賺 5000 金幣',g:()=>save.earned,goal:5000,gems:8},
+ {id:'q6',n:'到達 150m',g:()=>save.best,goal:150,gems:10}
+];
+function checkAch(){
+  for(const a of ACH)if(!save.ach[a.id]&&a.c()){save.ach[a.id]=1;save.stars++;sfx('ach');say('🏆 成就:'+a.n+' (+1 ⭐)');persist();ui();}
+}
+
+// ---------- 選單 ----------
+let tab='shop';
+const TABS=[['shop','🛒 商店'],['skill','⭐ 技能'],['quest','📋 任務'],['ach','🏆 成就'],['lb','🥇 排行'],['help','❓ 說明'],['set','⚙️ 設定']];
+function openPanel(t){tab=t||tab;panelOpen=true;$('panel').style.display='flex';render();}
+function closePanel(){panelOpen=false;$('panel').style.display='none';$('homeInfo')&&ui();}
+function render(){
+  $('tabs').innerHTML=TABS.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="openPanel('${k}')">${n}</button>`).join('');
+  const C=$('content');
+  const head=`<div style="font-size:13px;color:#cfc9f0;margin-bottom:4px">💰 ${save.gold} ｜ 💎 ${save.gems} ｜ ⭐ ${save.stars}</div>`;
+  if(tab==='shop'){
+    const pc=PICK_COST[save.pick],maxP=save.pick>=PICK_NAME.length;
+    const cc=Math.floor(30*Math.pow(1.5,(save.cap-20)/10));
+    C.innerHTML=head+`
+    <div class="item"><span>⛏️ ${PICK_NAME[save.pick-1]} Lv.${save.pick}<br><small>${maxP?'已滿級':'升級為 '+PICK_NAME[save.pick]+',挖更快'}</small></span><button class="btn gold" ${maxP?'disabled':''} onclick="buy('pick',${pc})">${maxP?'MAX':pc+'💰'}</button></div>
+    <div class="item"><span>🎒 背包 ${save.cap} 格<br><small>+10 格(上限 120)</small></span><button class="btn gold" ${save.cap>=120?'disabled':''} onclick="buy('cap',${cc})">${cc}💰</button></div>
+    <div class="item"><span>💣 TNT x1(持有 ${save.tnt})<br><small>炸開周圍方塊,自己不受傷</small></span><button class="btn gold" onclick="buy('tnt',25)">25💰</button></div>
+    <div class="item"><span>💣 TNT 組合 x5<br><small>比單買便宜</small></span><button class="btn gold" onclick="buy('tnt5',100)">100💰</button></div>
+    <div class="item"><span>🪜 梯子 x10(持有 ${save.lad})<br><small>讓你爬回地面</small></span><button class="btn gold" onclick="buy('lad',40)">40💰</button></div>
+    <div class="item"><span>⛑️ 安全帽(持有 ${save.hat}/3)<br><small>擋下一次落石</small></span><button class="btn gold" ${save.hat>=3?'disabled':''} onclick="buy('hat',80)">80💰</button></div>`;
+  }
+  if(tab==='skill'){
+    const S=[['speed','⚡ 快手','挖掘速度 +12% / 級'],['luck','🍀 幸運','賣出價格 +10% / 級'],['bag','🧳 大袋子','背包 +5 格 / 級']];
+    C.innerHTML=head+S.map(([k,n,d])=>{const lv=save.sk[k],cost=lv+1;
+      return `<div class="item"><span>${n} Lv.${lv}/5<br><small>${d}</small></span><button class="btn gold" ${lv>=5?'disabled':''} onclick="upSkill('${k}')">${lv>=5?'MAX':cost+'⭐'}</button></div>`}).join('')
+      +`<p style="font-size:13px;color:#b9b3d9">每挖到新的 20m 深度或完成成就,可獲得 1 個技能點。</p>`;
+  }
+  if(tab==='quest'){
+    C.innerHTML=head+QUEST.map(q=>{const v=Math.min(q.g(),q.goal),done=save.claim[q.id],can=v>=q.goal&&!done;
+      return `<div class="item ${done?'done':''}"><span>${q.n}<br><small>${v}/${q.goal} ・獎勵 ${q.gems}💎</small><div class="bar"><i style="width:${v/q.goal*100}%"></i></div></span><button class="btn green" ${can?'':'disabled'} onclick="claim('${q.id}')">${done?'已領':'領取'}</button></div>`}).join('');
+  }
+  if(tab==='ach'){
+    C.innerHTML=head+ACH.map(a=>`<div class="item ${save.ach[a.id]?'':'done'}"><span>${save.ach[a.id]?'🏆':'🔒'} ${a.n}<br><small>${a.d}</small></span><span>${save.ach[a.id]?'+1⭐':''}</span></div>`).join('');
+  }
+  if(tab==='lb'){
+    const rows=save.lb.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.depth}m</td><td>${r.t}</td></tr>`).join('')||'<tr><td colspan=4>還沒有紀錄,去挖深一點吧!</td></tr>';
+    C.innerHTML=head+`<table><tr><th>#</th><th>名字</th><th>深度</th><th>日期</th></tr>${rows}</table><p style="font-size:13px;color:#b9b3d9">本機排行榜(存在這台裝置)。最深紀錄:${save.best}m</p>`;
+  }
+  if(tab==='help'){
+    C.innerHTML=`<div style="font-size:14px;line-height:1.8">
+    <b>操作</b><br>方向鍵 / WASD:移動與挖掘(手機用下方按鈕)<br>E:TNT ・ L:放梯子 ・ R:回地面 ・ C:到存檔點 ・ M:選單<br><br>
+    <b>玩法</b><br>• 回到地面會自動賣掉礦物<br>• 越深礦物越值錢<br>• 💎綠寶石與鑽石直接給寶石,📦寶箱有隨機獎勵<br>• 往上爬需要在原地放梯子<br>• 摔太高(7 格以上)、被爆炸桶炸到會扣血<br>• 🪨落石砸中會死亡,安全帽可擋一次<br>• 每 50m 有存檔點,可補滿血並記錄<br>• 死亡可花 3 寶石原地復活</div>`;
+  }
+  if(tab==='set'){
+    C.innerHTML=`<div class="item"><span>🔊 音效</span><button class="btn" onclick="save.snd=!save.snd;persist();render()">${save.snd?'開':'關'}</button></div>
+    <div class="item" style="display:block"><div style="margin-bottom:6px">👤 礦工名字</div><input type="text" id="nm" maxlength="10" value="${save.name}" onchange="save.name=this.value||'礦工';persist()"></div>
+    <button class="btn red" style="width:100%" onclick="if(confirm('確定清除所有進度?')){localStorage.removeItem('goldMinerV2');location.reload();}">🗑️ 清除所有進度</button>`;
+  }
 }
 function buy(k,cost){
   if(save.gold<cost){say('金幣不夠!');return;}
@@ -266,34 +503,67 @@ function buy(k,cost){
   if(k==='pick')save.pick++;
   if(k==='cap')save.cap+=10;
   if(k==='tnt')save.tnt++;
-  persist();ui();openShop();
+  if(k==='tnt5')save.tnt+=5;
+  if(k==='lad')save.lad+=10;
+  if(k==='hat')save.hat++;
+  sfx('buy');persist();ui();render();
 }
-window.buy=buy;
-$('shopBtn').onclick=openShop;
-$('closeShop').onclick=()=>$('shop').style.display='none';
-$('tntBtn').onclick=explode;
-$('upBtn').onclick=()=>{ // 傳送回地面,背包賣掉但扣 20%
-  if(py>=SURF){const v=Math.floor(sellValue*0.8);save.gold+=v;sellValue=0;cargo=0;persist();say('緊急回地面,賣得 '+v);}
-  px=7;py=SURF-1;dig=null;ui();
-};
-$('resetBtn').onclick=()=>{if(confirm('確定清除所有進度?')){localStorage.removeItem('goldMinerSave');location.reload();}};
+function upSkill(k){
+  const lv=save.sk[k];if(lv>=5)return;
+  if(save.stars<lv+1){say('技能點不夠');return;}
+  save.stars-=lv+1;save.sk[k]++;sfx('buy');persist();ui();render();
+}
+function claim(id){
+  const q=QUEST.find(x=>x.id===id);
+  if(!q||save.claim[id]||q.g()<q.goal)return;
+  save.claim[id]=1;save.gems+=q.gems;sfx('ach');persist();ui();render();
+}
 
-// 控制
+// ---------- 按鈕與控制 ----------
+$('startBtn').onclick=()=>{homeOpen=false;$('home').style.display='none';say('往下挖!回到地面可賣礦');};
+$('homeShop').onclick=()=>openPanel('shop');
+$('shopBtn').onclick=()=>openPanel('shop');
+$('tntBtn').onclick=useTNT;
+$('ladBtn').onclick=useLadder;
+function toSurface(){
+  if(paused())return;
+  if(cargo>0){const v=Math.floor(sellValue*0.8);save.gold+=v;save.earned+=v;say('緊急回地面,賣得 '+v);}
+  recordRun();cargo=0;sellValue=0;px=7;py=SURF-1;dig=null;fallDist=0;hp=3;persist();ui();
+}
+function toCP(){
+  if(paused())return;
+  if(!save.cp){say('還沒有存檔點,挖到 50m 就有了');return;}
+  recordRun();px=7;py=save.cp;dig=null;fallDist=0;hp=3;ui();say('⛺ 已傳送到存檔點');
+}
+$('upBtn').onclick=toSurface;
+$('cpBtn').onclick=toCP;
+$('reviveBtn').onclick=()=>{if(save.gems<3)return;save.gems-=3;persist();hp=3;dead=false;$('death').style.display='none';
+  for(let y=py-1;y<=py+1;y++)for(let x=px-1;x<=px+1;x++)if(y>=SURF&&x>=0&&x<COLS&&grid[y][x]===TY.BOULDER)grid[y][x]=0;
+  ui();say('💎 已復活!');};
+$('respBtn').onclick=()=>{respawn(save.cp||SURF-1);};
+
 const KM={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',a:'left',d:'right',w:'up',s:'down',A:'left',D:'right',W:'up',S:'down'};
 addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='Escape'){closePanel();return;}
   if(KM[e.key]){keys[KM[e.key]]=true;e.preventDefault();}
-  if(e.key==='e'||e.key==='E')explode();
-  if(e.key==='r'||e.key==='R')$('upBtn').click();
+  const k=e.key.toLowerCase();
+  if(k==='e')useTNT();
+  if(k==='l')useLadder();
+  if(k==='r')toSurface();
+  if(k==='c')toCP();
+  if(k==='m'&&!homeOpen)(panelOpen?closePanel():openPanel());
 });
 addEventListener('keyup',e=>{if(KM[e.key])keys[KM[e.key]]=false;});
 document.querySelectorAll('#pad button').forEach(b=>{
   const d=b.dataset.d;
-  const on=e=>{e.preventDefault();keys[d]=true;}, off=e=>{e.preventDefault();keys[d]=false;};
-  b.addEventListener('touchstart',on);b.addEventListener('touchend',off);b.addEventListener('touchcancel',off);
+  const on=e=>{e.preventDefault();keys[d]=true;},off=e=>{e.preventDefault();keys[d]=false;};
+  b.addEventListener('touchstart',on,{passive:false});b.addEventListener('touchend',off);b.addEventListener('touchcancel',off);
   b.addEventListener('mousedown',on);b.addEventListener('mouseup',off);b.addEventListener('mouseleave',off);
 });
+addEventListener('blur',()=>{keys={};});
 
-genWorld();reset();ui();say('往下挖!回到地面可賣礦');
+genWorld();px=7;py=SURF-1;ui();
 requestAnimationFrame(loop);
 </script>
 </body>
