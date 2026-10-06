@@ -85,7 +85,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:7px;text-
 <div id="home">
   <img src="gold-miner-app-logo.svg" alt="" onerror="this.style.display='none'">
   <h2>⛏️ 黃金挖礦工</h2>
-  <p>往地底挖得越深,寶藏越值錢!用賺來的錢蓋房子、擺傢俱,讓你的小屋變成豪宅!</p>
+  <p>地底沒有盡頭!越挖越深、越深越值錢,還能蓋房子、擺傢俱,打造你的礦工之家。</p>
   <button class="btn gold" id="startBtn">▶ 開始遊戲</button>
   <button class="btn" id="homeShop">🛒 商店 / 我的家 / 任務</button>
   <button class="btn" id="fsBtn" style="font-size:15px;padding:10px">⛶ 全螢幕</button>
@@ -132,8 +132,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:7px;text-
 </div></div>
 
 <script>
-const COLS=15,ROWS=320,T=40,SURF=3,CPGAP=50,HOUSE_X=11,DOOR_X=12;
-let VH=12;
+const COLS=15,T=40,SURF=3,CPGAP=50,HOUSE_X=11,DOOR_X=12;
+let ROWS=0,VH=12;
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d');
 
@@ -145,6 +145,7 @@ const INFO={
  10:{hard:1.5,val:0,col:'#c0392b'},11:{hard:2,val:0,col:'#b8860b'},12:{hard:1e9,val:0,col:'#111'}
 };
 const HID={4:1,5:1,6:1,8:1,10:1,11:1};
+const ZONES=[[0,'#8b5a2b','表土層'],[100,'#7b4f3a','紅土層'],[250,'#6a5a7a','紫晶層'],[500,'#4f6f7a','藍冰層'],[1000,'#5a5a5a','黑曜層'],[2000,'#7a3b3b','熔岩層'],[4000,'#2f2f4f','虛空層']];
 const PICK_NAME=['木鏟','鐵鏟','鋼鎬','強化鎬','鑽石鎬','雷射鎬','神話鎬'];
 const PICK_POW=[1,1.6,2.4,3.4,4.8,6.5,9],PICK_COST=[0,60,150,320,650,1300,2600];
 const SCAN_R=[0,4,6,8,11],SCAN_CD=[0,14,11,8,5],SCAN_COST=[80,200,450,900];
@@ -173,26 +174,37 @@ const FLOORS=[{n:'木地板',c:'#c8a27a',c2:'#b78d63',cost:0},{n:'磁磚',c:'#e3
 const WALLS=[{n:'米色',c:'#ffe0b2',cost:0},{n:'天藍',c:'#b3e5fc',cost:40},{n:'粉紅',c:'#f8bbd0',cost:40},{n:'薄荷',c:'#c8e6c9',cost:40},{n:'深夜',c:'#546e7a',cost:60}];
 const COMFORT_MS=[10,25,50,80,120];
 
-const DEF={gold:0,gems:0,pick:1,cap:20,tnt:0,c4:0,det:false,lad:3,hat:0,best:0,cp:0,mined:0,earned:0,stars:0,
- scan:0,bots:0,botLv:1,vib:true,tomb:null,sonic:false,
+// ---------- 存檔 ----------
+const SAVE_KEY='goldMinerV2';
+const DEF={ver:3,gold:0,gems:0,pick:1,cap:20,tnt:0,c4:0,det:false,lad:3,hat:0,best:0,cp:0,mined:0,earned:0,stars:0,
+ scan:0,bots:0,botLv:1,vib:true,tomb:null,sonic:false,carry:{n:0,v:0},
  home:{lv:1,cells:{},floor:0,wall:0,ownF:[0],ownW:[0],cm:0},
  name:'礦工',snd:true,sk:{speed:0,luck:0,bag:0,blast:0},claim:{},ach:{},
  stat:{tnt:0,ladder:0,chest:0,hat:0,bot:0,scan:0,botc:0,tomb:0,c4:0},lb:[]};
+let storageOK=true,lastSaveAt=0;
 let save=load();
 function load(){
-  let s={};try{s=JSON.parse(localStorage.getItem('goldMinerV2')||'{}')}catch(e){}
+  let s={};
+  try{const raw=localStorage.getItem(SAVE_KEY);if(raw){const o=JSON.parse(raw);if(o&&typeof o==='object')s=o;}}catch(e){storageOK=false;}
   const r=Object.assign({},JSON.parse(JSON.stringify(DEF)),s);
   r.sk=Object.assign({},DEF.sk,s.sk||{});r.stat=Object.assign({},DEF.stat,s.stat||{});
   r.home=Object.assign(JSON.parse(JSON.stringify(DEF.home)),s.home||{});
   r.home.cells=r.home.cells||{};r.home.ownF=r.home.ownF||[0];r.home.ownW=r.home.ownW||[0];
+  r.carry=Object.assign({n:0,v:0},s.carry||{});
   return r;
 }
-function persist(){localStorage.setItem('goldMinerV2',JSON.stringify(save));}
+function persist(){
+  try{
+    save.ver=3;save.carry={n:cargo,v:sellValue};
+    localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+    lastSaveAt=Date.now();storageOK=true;
+  }catch(e){storageOK=false;}
+}
 
 let grid,reveal,px,py,cargo=0,sellValue=0,dig=null,keys={},stepT=0,fallT=0,gravT=0,fallDist=0,msgT=0;
 let hp=3,dead=false,homeOpen=true,panelOpen=false,bgPause=false,runMax=0,shake=0,face=1;
 let parts=[],camY=0,lastAchT=0,tNow=0,bots=[],scanCd=0,scanFx=null,lastScn='',tombMsg=0,lastTombTxt='';
-let c4s=[],blasts=[],HC={},homeTool=null,homeTrig=false,errShown=false;
+let c4s=[],blasts=[],HC={},homeTool=null,homeTrig=false,errShown=false,zoneNow=0;
 
 const rnd=(a,b)=>a+Math.random()*(b-a);
 function recomputeHC(){HC={};for(const k in save.home.cells){const id=save.home.cells[k];HC[id]=(HC[id]||0)+1;}}
@@ -243,35 +255,46 @@ function sfx(type){
 function say(s){const m=$('msg');m.textContent=s;m.style.opacity=1;msgT=1.8;}
 function burst(x,y,col,n=8){for(let i=0;i<n;i++)parts.push({x:x*T+20,y:y*T+20,vx:rnd(-90,90),vy:rnd(-120,20),life:rnd(.3,.7),col});}
 
-function genWorld(){
-  grid=[];reveal=[];
-  for(let r=0;r<ROWS;r++){
-    const row=[];reveal.push(new Uint8Array(COLS));
-    for(let c=0;c<COLS;c++){
-      if(r<SURF){row.push(0);continue;}
-      if(r===ROWS-1){row.push(TY.BEDROCK);continue;}
-      const d=r-SURF,x=Math.random();let t=TY.DIRT;
-      if(d>8&&x<0.25)t=TY.STONE;
-      if(d>35&&x<0.33)t=TY.HARD;
-      if(x>0.90)t=TY.COAL;
-      if(d>6&&x>0.955)t=TY.GOLD;
-      if(d>18&&x>0.978)t=TY.GEM;
-      if(d>70&&x>0.994)t=TY.DIAM;
-      if(d>4&&x>0.80&&x<0.835)t=TY.BOULDER;
-      if(d>12&&x>0.76&&x<0.78)t=TY.BARREL;
-      if(d>5&&x>0.74&&x<0.755)t=TY.CHEST;
-      row.push(t);
+// ---------- 無限世界 ----------
+const depthOf=r=>Math.max(0,r-SURF+1);
+const isCP=(r,c)=>r>SURF&&(r-SURF)%CPGAP===0&&c>=4&&c<=10;
+const passable=t=>t===0||t===9;
+function zoneIdx(gy){const d=depthOf(gy);let i=0;for(let k=0;k<ZONES.length;k++)if(d>=ZONES[k][0])i=k;return i;}
+const zoneCol=gy=>ZONES[zoneIdx(gy)][1];
+function genRow(r){
+  const d=r-SURF,row=[];
+  const cp=d>0&&d%CPGAP===0,aboveCp=(d+1)>0&&(d+1)%CPGAP===0,belowCp=d>1&&(d-1)%CPGAP===0;
+  const hardHi=d>35?Math.min(.6,.33+(d-35)/2000):0,rich=d>300;
+  for(let c=0;c<COLS;c++){
+    if(r<SURF){row.push(0);continue;}
+    const x=Math.random();let t=TY.DIRT;
+    if(d>8&&x<0.25)t=TY.STONE;
+    if(d>35&&x<hardHi)t=TY.HARD;
+    if(x>0.90)t=TY.COAL;
+    if(d>6&&x>0.955)t=TY.GOLD;
+    if(d>18&&x>(rich?0.97:0.978))t=TY.GEM;
+    if(d>70&&x>(rich?0.99:0.994))t=TY.DIAM;
+    if(d>4&&x>0.80&&x<0.835)t=TY.BOULDER;
+    if(d>12&&x>0.76&&x<0.78)t=TY.BARREL;
+    if(d>5&&x>0.74&&x<0.755)t=TY.CHEST;
+    if(c>=4&&c<=10){
+      if(cp)t=0;
+      else if(belowCp)t=TY.STONE;
+      else if(aboveCp&&t===TY.BOULDER)t=TY.DIRT;
     }
-    grid.push(row);
+    row.push(t);
   }
-  for(let k=1;SURF+CPGAP*k<ROWS-2;k++){
-    const r=SURF+CPGAP*k;
-    for(let c=4;c<=10;c++){grid[r][c]=0;grid[r+1][c]=TY.STONE;if(grid[r-1][c]===TY.BOULDER)grid[r-1][c]=TY.DIRT;}
-  }
+  return row;
 }
+function need(target){
+  while(grid.length<target){grid.push(genRow(grid.length));reveal.push(new Uint8Array(COLS));}
+  ROWS=grid.length;
+}
+function genWorld(){grid=[];reveal=[];ROWS=0;need(SURF+120);}
 function applyTomb(){
   const t=save.tomb;if(!t)return;
-  if(t.y<SURF||t.y>=ROWS-1||t.x<0||t.x>=COLS){save.tomb=null;persist();return;}
+  if(t.y<SURF||t.x<0||t.x>=COLS){save.tomb=null;persist();return;}
+  need(t.y+VH+60);
   grid[t.y][t.x]=0;
 }
 function revealAround(x,y,r){
@@ -280,9 +303,6 @@ function revealAround(x,y,r){
     if(reveal[yy][xx]===0)reveal[yy][xx]=1;
   }
 }
-const isCP=(r,c)=>r>SURF&&(r-SURF)%CPGAP===0&&c>=4&&c<=10;
-const passable=t=>t===0||t===9;
-const depthOf=r=>Math.max(0,r-SURF+1);
 
 function checkTomb(){
   const t=save.tomb;
@@ -323,7 +343,7 @@ function drawTomb(){
   }
 }
 
-function respawn(r){px=7;py=r;cargo=0;sellValue=0;dig=null;fallDist=0;hp=maxHp();dead=false;$('death').style.display='none';revealAround(px,py,1);ui();}
+function respawn(r){need(r+VH+60);px=7;py=r;cargo=0;sellValue=0;dig=null;fallDist=0;hp=maxHp();dead=false;$('death').style.display='none';revealAround(px,py,1);persist();ui();}
 function ui(){
   $('gold').textContent=save.gold;$('gems').textContent=save.gems;
   $('cargo').textContent=cargo;$('cap').textContent=capNow();
@@ -331,7 +351,7 @@ function ui(){
   $('c4n').textContent=save.c4;$('detn').textContent=save.det?c4s.length:'自動';
   $('botn').textContent=(save.bots-bots.length)+'/'+save.bots;
   $('hp').textContent='❤️'.repeat(Math.max(0,hp))+'🖤'.repeat(Math.max(0,maxHp()-hp))+(save.hat>0?'⛑️'+save.hat:'');
-  $('homeInfo').textContent='最深紀錄 '+save.best+'m ｜ ⭐ '+save.stars+' ｜ 🏠 '+HOME_LV[save.home.lv-1].n;
+  $('homeInfo').textContent='最深紀錄 '+save.best+'m ｜ ⭐ '+save.stars+' ｜ 🏠 '+HOME_LV[save.home.lv-1].n+(storageOK?'':' ｜ ⚠️ 無法存檔');
   updateTombPill();
 }
 function sell(){
@@ -342,6 +362,7 @@ function sell(){
 function onArrive(){
   const d=depthOf(py);
   revealAround(px,py,1);
+  const zi=zoneIdx(py);if(zi>zoneNow){zoneNow=zi;say('🌋 進入「'+ZONES[zi][2]+'」!');}
   if(d>runMax)runMax=d;
   if(d>save.best){
     const gain=Math.floor(d/20)-Math.floor(save.best/20);
@@ -388,18 +409,18 @@ function hurt(n,why){
 }
 function die(why){
   dead=true;vib([100,60,200]);
+  const n=cargo,v=sellValue;cargo=0;sellValue=0;
   let tombTxt='你沒有帶著礦物,沒有任何損失。';
-  if(cargo>0&&py>=SURF){
+  if(n>0&&py>=SURF){
     const had=!!save.tomb;
-    save.tomb={x:px,y:py,cargo:cargo,val:sellValue};
-    tombTxt='背包的 '+cargo+' 個礦物變成墓碑,留在 '+depthOf(py)+'m 處'+(save.sonic?'(音波探測器會標出位置)':'(買「音波探測器」才能看到精準位置)')+(had?'。舊的墓碑已經消失了':'')+'。';
-    persist();
+    save.tomb={x:px,y:py,cargo:n,val:v};
+    tombTxt='背包的 '+n+' 個礦物變成墓碑,留在 '+depthOf(py)+'m 處'+(save.sonic?'(音波探測器會標出位置)':'(買「音波探測器」才能看到精準位置)')+(had?'。舊的墓碑已經消失了':'')+'。';
   }
-  recordRun();
+  persist();recordRun();
   $('deathText').textContent=why+'。'+tombTxt+' 存檔點 '+depthOf(save.cp||SURF)+'m。';
   $('reviveBtn').disabled=save.gems<3;
   $('death').style.display='flex';
-  keys={};setDir('');cargo=0;sellValue=0;ui();
+  keys={};setDir('');ui();
 }
 function recordRun(){
   if(runMax>=5){
@@ -515,6 +536,7 @@ function botMine(b,x,y){
 function updateBots(dt){
   for(let i=bots.length-1;i>=0;i--){
     const b=bots[i];
+    need(b.y+25);
     if(!(b.x===px&&b.y===py))b.armed=true;
     else if(b.armed){
       const g=Math.round(b.store*sellMul());
@@ -553,7 +575,7 @@ function stepOrDig(dx,dy,dt){
   }
 }
 function fallBoulders(){
-  for(let y=ROWS-3;y>=SURF;y--)for(let x=0;x<COLS;x++){
+  for(let y=Math.min(ROWS-3,py+40);y>=Math.max(SURF,py-30);y--)for(let x=0;x<COLS;x++){
     if(grid[y][x]!==TY.BOULDER)continue;
     if(x===px&&y+1===py){
       grid[y][x]=0;
@@ -573,6 +595,7 @@ function update(dt){
   if(shake>0)shake-=dt;
   if(scanFx){scanFx.t+=dt;if(scanFx.t>.9)scanFx=null;}
   if(paused())return;
+  need(py+VH+60);
   stepT-=dt;fallT-=dt;gravT-=dt;
   if(tombMsg>0)tombMsg-=dt;
   if(scanCd>0)scanCd=Math.max(0,scanCd-dt);
@@ -597,8 +620,8 @@ function update(dt){
   lastAchT-=dt;if(lastAchT<=0){lastAchT=1;checkAch();}
 }
 
-function drawTile(t,sx,sy){
-  const base=[4,5,6,8,10,11].includes(t)?'#8b5a2b':INFO[t].col;
+function drawTile(t,sx,sy,gy=0){
+  const base=(t===1||[4,5,6,8,10,11].includes(t))?zoneCol(gy):INFO[t].col;
   ctx.fillStyle=base;ctx.fillRect(sx,sy,T,T);
   ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(sx,sy+T-4,T,4);
   if(t===4||t===5){ctx.fillStyle=INFO[t].col;for(const[a,b,s]of[[8,8,10],[22,14,9],[12,24,10]])ctx.fillRect(sx+a,sy+b,s,s-2);}
@@ -665,6 +688,7 @@ function drawHouse(){
   ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('HOME',DOOR_X*T+20,gy-38);ctx.textAlign='start';
 }
 function draw(){
+  need(py+VH+60);
   camY=Math.max(0,Math.min(ROWS-VH,py-Math.floor(VH/2)));
   ctx.save();
   if(shake>0)ctx.translate(rnd(-5,5),rnd(-5,5));
@@ -678,7 +702,7 @@ function draw(){
       else if(t===9)drawLadder(sx,sy);
       else{
         const rv=reveal[gy][c];
-        drawTile(HID[t]&&!rv?1:t,sx,sy);
+        drawTile(HID[t]&&!rv?1:t,sx,sy,gy);
         if(HID[t]&&rv===2){ctx.strokeStyle='rgba(255,235,59,'+(.55+.45*Math.sin(tNow/180))+')';ctx.lineWidth=3;ctx.strokeRect(sx+2,sy+2,T-4,T-4);ctx.lineWidth=1;}
       }
     }
@@ -691,9 +715,9 @@ function draw(){
     ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText('SELL',T+16,sr*T+10);
     drawHouse();
   }
-  for(let k=1;SURF+CPGAP*k<ROWS-2;k++){
-    const rr=SURF+CPGAP*k-camY;
-    if(rr>=0&&rr<VH){ctx.fillStyle='#fff';ctx.fillRect(7*T+18,rr*T+4,3,32);ctx.fillStyle=(SURF+CPGAP*k<=save.cp)?'#4caf50':'#ff7043';ctx.fillRect(7*T+21,rr*T+5,16,11);}
+  for(let r=0;r<VH;r++){
+    const gy=camY+r;
+    if(gy>SURF&&(gy-SURF)%CPGAP===0){ctx.fillStyle='#fff';ctx.fillRect(7*T+18,r*T+4,3,32);ctx.fillStyle=(gy<=save.cp)?'#4caf50':'#ff7043';ctx.fillRect(7*T+21,r*T+5,16,11);}
   }
   drawTomb();drawC4();
   for(const b of bots)drawBot(b);
@@ -711,10 +735,13 @@ function draw(){
   if(scanFx){const k=scanFx.t/.9;ctx.strokeStyle='rgba(0,229,255,'+(1-k)+')';ctx.lineWidth=4;ctx.beginPath();ctx.arc(scanFx.x*T+20,(scanFx.y-camY)*T+20,k*scanFx.R*T,0,7);ctx.stroke();ctx.lineWidth=1;}
   ctx.fillStyle='rgba(0,0,10,'+(Math.min(1,depthOf(py)/200)*0.6)+')';ctx.fillRect(0,0,cv.width,cv.height);
   ctx.restore();
+  const WIN=200,wi=Math.max(0,Math.floor((py-SURF)/WIN));
+  const bp=y=>{const f=(y-SURF-wi*WIN)/WIN;return(f>=0&&f<=1)?10+(cv.height-20)*f:-99;};
+  const pf=Math.min(1,Math.max(0,(py-SURF-wi*WIN)/WIN));
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(cv.width-10,10,6,cv.height-20);
-  ctx.fillStyle='#ffd54a';ctx.fillRect(cv.width-10,10+(cv.height-20)*(py/ROWS),6,10);
-  ctx.fillStyle='#00e5ff';for(const b of bots)ctx.fillRect(cv.width-12,10+(cv.height-20)*(b.y/ROWS),10,4);
-  if(save.tomb&&save.sonic){ctx.fillStyle='#b9f6ca';ctx.fillRect(cv.width-12,10+(cv.height-20)*(save.tomb.y/ROWS),10,4);}
+  ctx.fillStyle='#ffd54a';ctx.fillRect(cv.width-10,10+(cv.height-20)*pf,6,10);
+  ctx.fillStyle='#00e5ff';for(const b of bots)ctx.fillRect(cv.width-12,bp(b.y),10,4);
+  if(save.tomb&&save.sonic){ctx.fillStyle='#b9f6ca';ctx.fillRect(cv.width-12,bp(save.tomb.y),10,4);}
 }
 let last=performance.now();
 function loop(n){
@@ -747,7 +774,9 @@ const ACH=[
  {id:'a16',n:'遙控爆破',d:'購買遙控引爆器',c:()=>save.det},
  {id:'a17',n:'大爆炸',d:'爆破技術升到 Lv.3',c:()=>save.sk.blast>=3},
  {id:'a18',n:'溫馨小窩',d:'房子舒適度達 25',c:()=>calcComfort()>=25},
- {id:'a19',n:'豪宅主人',d:'把房子升級成豪宅',c:()=>save.home.lv>=3}
+ {id:'a19',n:'豪宅主人',d:'把房子升級成豪宅',c:()=>save.home.lv>=3},
+ {id:'a20',n:'地底深處',d:'到達 500m',c:()=>save.best>=500},
+ {id:'a21',n:'無底洞',d:'到達 1000m',c:()=>save.best>=1000}
 ];
 const QUEST=[
  {id:'q1',n:'挖 100 個方塊',g:()=>save.mined,goal:100,gems:2},
@@ -760,7 +789,9 @@ const QUEST=[
  {id:'q8',n:'收回挖礦機 3 次',g:()=>save.stat.botc,goal:3,gems:5},
  {id:'q9',n:'找回墓碑 2 次',g:()=>save.stat.tomb,goal:2,gems:5},
  {id:'q10',n:'使用 TNT 或 C4 20 次',g:()=>save.stat.tnt+save.stat.c4,goal:20,gems:6},
- {id:'q11',n:'房子裡擺 6 件傢俱',g:()=>Object.keys(save.home.cells).length,goal:6,gems:4}
+ {id:'q11',n:'房子裡擺 6 件傢俱',g:()=>Object.keys(save.home.cells).length,goal:6,gems:4},
+ {id:'q12',n:'到達 500m',g:()=>save.best,goal:500,gems:15},
+ {id:'q13',n:'到達 1000m',g:()=>save.best,goal:1000,gems:30}
 ];
 function checkAch(){
   for(const a of ACH)if(!save.ach[a.id]&&a.c()){save.ach[a.id]=1;save.stars++;sfx('ach');vib(40);say('🏆 成就:'+a.n+' (+1 ⭐)');persist();ui();}
@@ -810,10 +841,26 @@ function houseBonusText(){
   return L.length?L.join(' ・ '):'還沒有加成,擺幾件實用傢俱吧!';
 }
 
+function exportSave(){
+  persist();
+  const s=JSON.stringify(save);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(()=>say('📋 存檔已複製到剪貼簿'),()=>prompt('複製這段存檔內容:',s));
+  else prompt('複製這段存檔內容:',s);
+}
+function importSave(){
+  const s=prompt('貼上之前匯出的存檔內容:');
+  if(!s)return;
+  try{
+    const o=JSON.parse(s);
+    if(!o||typeof o!=='object'||o.gold===undefined)throw 0;
+    localStorage.setItem(SAVE_KEY,s);location.reload();
+  }catch(e){alert('存檔格式不正確,沒有任何變更');}
+}
+
 let tab='shop';
 const TABS=[['shop','🛒 商店'],['house','🏠 我的家'],['tech','🔧 科技'],['skill','⭐ 技能'],['quest','📋 任務'],['ach','🏆 成就'],['lb','🥇 排行'],['help','❓ 說明'],['set','⚙️ 設定']];
 function openPanel(t){if(t==='home')t='house';tab=t||tab;panelOpen=true;keys={};setDir('');$('panel').style.display='flex';render();}
-function closePanel(){panelOpen=false;$('panel').style.display='none';ui();}
+function closePanel(){panelOpen=false;$('panel').style.display='none';persist();ui();}
 function render(){
   $('tabs').innerHTML=TABS.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="openPanel('${k}')">${n}</button>`).join('');
   const C=$('content');
@@ -892,10 +939,15 @@ function render(){
     C.innerHTML=`<div style="font-size:14px;line-height:1.85">
     <b>手機操作</b><br>左下搖桿:移動與挖掘 ・ 右下按鈕:TNT、C4、引爆、梯子、掃描、挖礦機、存檔點、回地面 ・ 右上 ☰:選單<br><br>
     <b>鍵盤</b><br>方向鍵/WASD 移動 ・ E:TNT ・ X:C4 ・ F:引爆 ・ L:梯子 ・ Q:掃描 ・ B:挖礦機 ・ R:回地面 ・ C:存檔點 ・ M:選單<br><br>
-    <b>玩法</b><br>• 礦物、寶箱、炸藥桶藏在泥土裡,靠近或掃描才看得到<br>• 回到地面自動賣礦,越深越值錢<br>• 🧨 C4 範圍大,紅框內會被炸傷;有遙控引爆器可跑遠再引爆<br>• 🪨 落石砸中會死亡,安全帽可擋一次<br>• 🪦 死亡後礦物變成墓碑,走回去撿<br>• 🏠 走到地面右邊的房子門口,可以蓋房子、擺傢俱,傢俱有實用加成<br>• 每 50m 有存檔點,死亡可花 3 寶石原地復活</div>`;
+    <b>玩法</b><br>• 地底沒有盡頭,每個地層顏色不同,越深越值錢也越危險<br>• 礦物、寶箱、炸藥桶藏在泥土裡,靠近或掃描才看得到<br>• 🧨 C4 範圍大,紅框內會被炸傷;有遙控引爆器可跑遠再引爆<br>• 🪨 落石砸中會死亡,安全帽可擋一次<br>• 🪦 死亡後礦物變成墓碑,走回去撿<br>• 🏠 走到地面右邊的房子門口,可以蓋房子、擺傢俱<br>• 每 50m 有存檔點,死亡可花 3 寶石原地復活<br>• 遊戲每 5 秒自動存檔;換裝置可用設定裡的匯出/匯入</div>`;
   }
   if(tab==='set'){
-    C.innerHTML=it('🔊 音效',`<button class="btn" onclick="save.snd=!save.snd;persist();render()">${save.snd?'開':'關'}</button>`)
+    const sz=(JSON.stringify(save).length/1024).toFixed(1);
+    const tm=lastSaveAt?new Date(lastSaveAt).toLocaleTimeString():'尚未存檔';
+    C.innerHTML=it(`💾 存檔狀態:${storageOK?'✅ 正常':'❌ 無法寫入(可能是無痕模式或空間已滿)'}<br><small>上次存檔 ${tm} ・ ${sz} KB</small>`,`<button class="btn" onclick="persist();render();say('已存檔')">立即存檔</button>`)
+    +it('📤 匯出存檔<br><small>複製存檔文字,可備份或換裝置</small>',`<button class="btn" onclick="exportSave()">匯出</button>`)
+    +it('📥 匯入存檔<br><small>貼上匯出的文字,會覆蓋目前進度</small>',`<button class="btn" onclick="importSave()">匯入</button>`)
+    +it('🔊 音效',`<button class="btn" onclick="save.snd=!save.snd;persist();render()">${save.snd?'開':'關'}</button>`)
     +it('📳 震動回饋',`<button class="btn" onclick="save.vib=!save.vib;persist();render();vib(40)">${save.vib?'開':'關'}</button>`)
     +`<div class="item" style="display:block"><div style="margin-bottom:6px">👤 礦工名字</div><input type="text" maxlength="10" value="${save.name}" onchange="save.name=this.value||'礦工';persist()"></div>
     <button class="btn red" style="width:100%;margin-top:8px" onclick="if(confirm('確定清除所有進度?')){localStorage.removeItem('goldMinerV2');location.reload();}">🗑️ 清除所有進度</button>`;
@@ -940,6 +992,7 @@ function toSurface(){
 function toCP(){
   if(paused())return;
   if(!save.cp){say('還沒有存檔點,挖到 50m 就有了');return;}
+  need(save.cp+VH+60);
   recordRun();px=7;py=save.cp;dig=null;fallDist=0;hp=maxHp();revealAround(px,py,1);ui();say('⛺ 已傳送到存檔點');
 }
 bind('tntBtn',useTNT);bind('c4Btn',placeC4);bind('detBtn',detonateAll);
@@ -966,30 +1019,3 @@ function padSet(e){
 pad.addEventListener('pointerdown',e=>{e.preventDefault();padId=e.pointerId;try{pad.setPointerCapture(e.pointerId)}catch(_){}padSet(e);});
 pad.addEventListener('pointermove',e=>{if(e.pointerId===padId)padSet(e);});
 const padEnd=e=>{if(e.pointerId===padId){padId=null;keys.left=keys.right=keys.up=keys.down=false;setDir('');}};
-pad.addEventListener('pointerup',padEnd);pad.addEventListener('pointercancel',padEnd);
-
-const KM={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',a:'left',d:'right',w:'up',s:'down',A:'left',D:'right',W:'up',S:'down'};
-addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT')return;
-  if(e.key==='Escape'){closePanel();return;}
-  if(KM[e.key]){keys[KM[e.key]]=true;setDir(KM[e.key]);e.preventDefault();}
-  const k=e.key.toLowerCase();
-  if(k==='e')useTNT();if(k==='x')placeC4();if(k==='f')detonateAll();
-  if(k==='l')useLadder();if(k==='q')useScan();if(k==='b')placeBot();
-  if(k==='r')toSurface();if(k==='c')toCP();
-  if(k==='m'&&!homeOpen)(panelOpen?closePanel():openPanel());
-});
-addEventListener('keyup',e=>{if(KM[e.key]){keys[KM[e.key]]=false;setDir('');}});
-addEventListener('blur',()=>{keys={};setDir('');});
-document.addEventListener('visibilitychange',()=>{bgPause=document.hidden;if(document.hidden){keys={};setDir('');}});
-document.addEventListener('contextmenu',e=>e.preventDefault());
-document.addEventListener('gesturestart',e=>e.preventDefault());
-let lastTap=0;
-document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTap<300)e.preventDefault();lastTap=n;},{passive:false});
-
-recomputeHC();hp=maxHp();
-genWorld();applyTomb();px=7;py=SURF-1;revealAround(px,py,1);ui();fit();
-requestAnimationFrame(loop);
-</script>
-</body>
-</html>
