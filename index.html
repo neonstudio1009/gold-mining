@@ -1019,3 +1019,37 @@ function padSet(e){
 pad.addEventListener('pointerdown',e=>{e.preventDefault();padId=e.pointerId;try{pad.setPointerCapture(e.pointerId)}catch(_){}padSet(e);});
 pad.addEventListener('pointermove',e=>{if(e.pointerId===padId)padSet(e);});
 const padEnd=e=>{if(e.pointerId===padId){padId=null;keys.left=keys.right=keys.up=keys.down=false;setDir('');}};
+pad.addEventListener('pointerup',padEnd);pad.addEventListener('pointercancel',padEnd);
+
+const KM={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',a:'left',d:'right',w:'up',s:'down',A:'left',D:'right',W:'up',S:'down'};
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='Escape'){closePanel();return;}
+  if(KM[e.key]){keys[KM[e.key]]=true;setDir(KM[e.key]);e.preventDefault();}
+  const k=e.key.toLowerCase();
+  if(k==='e')useTNT();if(k==='x')placeC4();if(k==='f')detonateAll();
+  if(k==='l')useLadder();if(k==='q')useScan();if(k==='b')placeBot();
+  if(k==='r')toSurface();if(k==='c')toCP();
+  if(k==='m'&&!homeOpen)(panelOpen?closePanel():openPanel());
+});
+addEventListener('keyup',e=>{if(KM[e.key]){keys[KM[e.key]]=false;setDir('');}});
+addEventListener('blur',()=>{keys={};setDir('');});
+document.addEventListener('visibilitychange',()=>{bgPause=document.hidden;if(document.hidden){keys={};setDir('');persist();}});
+addEventListener('pagehide',persist);
+setInterval(()=>{if(!homeOpen&&!dead)persist();},5000);
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+let lastTap=0;
+document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTap<300)e.preventDefault();lastTap=n;},{passive:false});
+
+recomputeHC();hp=maxHp();
+{
+  const cn=save.carry.n||0,cvv=save.carry.v||0;
+  cargo=Math.min(cn,capNow());
+  sellValue=cn>0?cvv*cargo/cn:0;
+}
+genWorld();applyTomb();px=7;py=SURF-1;revealAround(px,py,1);persist();ui();fit();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
